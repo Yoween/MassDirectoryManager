@@ -35,22 +35,25 @@ class Execution():
                     else:
                         self.functionsOutput = str(error) + "\n"
         else:
-            for iteration in range(numIterations):
-                for item in inputList:
-                    try:
+            try:
+                for iteration in range(numIterations):
+                    for item in inputList:
                         for j in range(len(item)):
                             marker = item[j:j+5]
                             if marker == "{inc}":
                                 os.mkdir(f"{item[0:j]}{iteration+startPos}{item[j+5:len(item)]}")
                                 time.sleep(timeSleep)
                                 self.functionsOutput = "Done!\n"
-                    except Exception as error:
-                        if str(error).startswith("[WinError 183]"):
-                            self.functionsOutput = f"'{item}' already exist (skipping)\n"
-                        elif str(error).startswith("[WinError 123]"):
-                            self.functionsOutput = f"'{item}' has invalid name (skipping)\n"
-                        else:
-                            self.functionsOutput = str(error) + "\n"
+            except Exception as error:
+                print(error)
+                if str(error).startswith("[WinError 183]"):
+                    self.functionsOutput = f"'{item}' already exist (skipping)\n"
+                elif str(error).startswith("[WinError 123]"):
+                    self.functionsOutput = f"'{item}' has invalid name (skipping)\n"
+                elif str(error).endswith("object cannot be interpreted as an integer"):
+                    self.functionsOutput = "Please only use integers as increment values\n"
+                else:
+                    self.functionsOutput = str(error) + "\n"
 
 
     def removeFolders(self, inputString:int, modeSelected:int, startsEndsWith:str, numIterations=0, startPos=0):
@@ -146,13 +149,15 @@ class Execution():
 
 
 #UI class
-class WindowUI: 
+class WindowUI:
     def __init__(self):
         self.execution = Execution()
 
         #global
+        width = 700
+        height = 600
         self.root = tk.Tk()
-        self.root.geometry("600x600")
+        self.root.geometry(f"{width}x{height}")
         self.root.title("Mass Directory Manager")
 
         tabControl = ttk.Notebook(self.root)
@@ -166,22 +171,20 @@ class WindowUI:
         tabControl.add(self.tab1, text = " Create folders ")
         tabControl.add(self.tab2, text = " Remove folders ")
         tabControl.add(self.tab3, text = " Modify folders ")
-        tabControl.place(x=0, y=0)
+        tabControl.pack(side = "left", anchor = "n", expand=True, fill=tk.BOTH)
         anotherTabControl.add(self.tab4, text = "Output")
-        anotherTabControl.place(x=328, y=0)
+        anotherTabControl.pack(side = "right", anchor = "n", expand=True, fill=tk.BOTH)
 
-        buttonQuit = tk.Button(self.root, text = "Quit!", command = self.root.destroy)
-        buttonQuit.pack(side = "bottom",  anchor = "se", pady = 20, padx = 20)
 
-        self.root.bind("<Escape>", lambda y: self.root.destroy())
+        self.root.bind("<Escape>", lambda y: self.root.geometry(f"{width}x{height}"))
         self.root.bind("<F1>", lambda z: tabControl.select(self.tab1))
         self.root.bind("<F2>", lambda z: tabControl.select(self.tab2))
         self.root.bind("<F3>", lambda z: tabControl.select(self.tab3))
 
         #tab1 - create folders
 
-        textBox1 = tk.Text(self.tab1, height = 27, width = 40)
-        textBox1.pack()
+        textBox1 = tk.Text(self.tab1, width = 40)
+        textBox1.pack(expand=True, fill=tk.BOTH)
 
         buttonGo1 = tk.Button(self.tab1, text = "Go!", command = lambda: [self.newCreateFolders(textBox1.get("1.0",'end-1c'), v1.get())])
         buttonGo1.pack(side = "bottom", pady = 10)
@@ -191,7 +194,7 @@ class WindowUI:
         timeoutText = tk.Label(self.tab1, text = "Time to pause between actions (in seconds)")
         timeoutText.pack()
         timeoutSlider = tk.Scale(self.tab1, variable = v1, from_ = 0, to = 60, orient = tk.HORIZONTAL)   
-        timeoutSlider.pack(anchor = "center")
+        timeoutSlider.pack(anchor = tk.CENTER, expand=True, fill=tk.BOTH)
         
         self.incrementVariable = tk.IntVar()
         
@@ -200,8 +203,8 @@ class WindowUI:
 
         #tab2 - remove folders
 
-        testBox2 = tk.Text(self.tab2, height = 27, width = 40)
-        testBox2.pack()
+        testBox2 = tk.Text(self.tab2, width = 40)
+        testBox2.pack(expand=True, fill=tk.BOTH)
 
         v4 = tk.IntVar()
 
@@ -224,9 +227,9 @@ class WindowUI:
 
         v2 = tk.IntVar()
 
-        startsWith = tk.Radiobutton(self.tab3, text = "Starts with", variable=v2, value=1)
+        startsWith = tk.Checkbutton(self.tab3, text = "Starts with", variable=v2, onvalue=1, offvalue=0)
         startsWith.pack()
-        endsWith = tk.Radiobutton(self.tab3, text = "Ends with", variable=v2, value=2)
+        endsWith = tk.Checkbutton(self.tab3, text = "Ends with", variable=v2, onvalue=2, offvalue=0)
         endsWith.pack()
 
         entryBox2 = tk.Entry(self.tab3)
@@ -242,42 +245,64 @@ class WindowUI:
         timeoutText2 = tk.Label(self.tab3, text = "Time to pause between actions (in seconds)")
         timeoutText2.pack()
         timeoutSlider = tk.Scale(self.tab3, variable = v3, from_ = 0, to = 60, orient = tk.HORIZONTAL)   
-        timeoutSlider.pack(anchor = tk.CENTER)
+        timeoutSlider.pack(anchor = tk.CENTER, expand=True, fill=tk.BOTH)
 
         buttonGo3 = tk.Button(self.tab3, text = "Go!", command = lambda: [self.newModifyFolders(entryBox2.get(), v2.get(), entryBox3.get(), v3.get())])
         buttonGo3.pack(side = "bottom", pady = 10)
 
         #tab4 - output
 
-        self.log = tk.Text(self.tab4, state = 'normal', wrap = 'none', width = 33)
-        self.log.pack()
-        self.log.configure(state = "disabled")
+        self.logs = tk.Text(self.tab4, state = 'normal', wrap = 'none', width = 33)
+        self.logs.pack(expand=True, fill=tk.BOTH)
+        self.logs.configure(state = "disabled")
+        
+        buttonClearLogs = tk.Button(self.tab4, text = "Clear logs", command = self.clearLogs)
+        buttonClearLogs.pack(padx = 10, pady = 5)
 
         buttonFolderList = tk.Button(self.tab4, text = "Get folders list", command = self.newFoldersList)
-        buttonFolderList.pack(padx = 10, pady = 10)
+        buttonFolderList.pack(padx = 10, pady = 5)
 
         buttonSelectFolder = tk.Button(self.tab4, text = "Change working folder", command = self.newChangeFolder)
-        buttonSelectFolder.pack(padx = 10, pady = 10)
+        buttonSelectFolder.pack(padx = 10, pady = 5)
 
         buttonOpenFolder = tk.Button(self.tab4, text = "Explore working folder", command = self.newOpenCurrentFolder)
-        buttonOpenFolder.pack(padx = 10, pady = 10)
+        buttonOpenFolder.pack(padx = 10, pady = 5)
+        
+        
+        buttonQuit = tk.Button(self.tab4, text = "Quit!", command = self.root.destroy)
+        buttonQuit.pack(side = "bottom",  anchor = "se", pady = 8, padx = 8)
 
 
         self.root.mainloop()
+        
+        
+    def focus_next_widget(self, event):
+        event.widget.tk_focusNext().focus()
+        return("break")
+    
+    def focus_previous_widget(self, event):
+        event.widget.tk_focusPrev().focus()
+        return("break")
+    
+    def clearLogs(self):
+        self.logs.config(state=tk.NORMAL)
+        self.logs.delete('1.0', tk.END)
 
 
     def incrementSelector(self, selectedTab):
         variable = self.incrementVariable.get()
         if variable == 1:
-            self.label2 = tk.Label(selectedTab, text= "Pos to start")
-            self.label2.pack(side="right", padx = 2)
-            self.incrementStart = tk.Text(selectedTab, height = 1, width = 2)
-            self.incrementStart.pack(side = "right", padx = 2)
-
             self.label1 = tk.Label(selectedTab, text= "Num to loop")
-            self.label1.pack(side="right", padx = 2)
+            self.label1.pack(side="left", anchor="w", padx = 2, expand=True, fill=tk.BOTH)
             self.incrementValue = tk.Text(selectedTab, height = 1, width = 3)
-            self.incrementValue.pack(side = "right", padx = 2)
+            self.incrementValue.pack(side = "left", anchor="w", padx = 2, expand=True, fill=tk.BOTH)
+            self.incrementValue.bind("<Tab>", self.focus_next_widget)
+            
+            self.label2 = tk.Label(selectedTab, text= "Pos to start")
+            self.label2.pack(side="left", anchor="e", padx = 2, expand=True, fill=tk.BOTH)
+            self.incrementStart = tk.Text(selectedTab, height = 1, width = 2)
+            self.incrementStart.pack(side = "left", anchor="e", padx = 2, expand=True, fill=tk.BOTH)
+            self.incrementStart.bind("<Tab>", self.focus_next_widget)
         elif variable == 0:
             try:
                 self.label1.destroy()
@@ -306,9 +331,9 @@ class WindowUI:
 
         p = multiprocessing.Process(target = self.execution.createFolders(entryGet, sleepValue, incrementValue, incrementStart))
         p.start()
-        self.log.configure(state = "normal")
-        self.log.insert("1.0", f"---------------------------------\n{self.execution.functionsOutput}")
-        self.log.configure(state = "disabled")
+        self.logs.configure(state = "normal")
+        self.logs.insert("1.0", f"---------------------------------\n{self.execution.functionsOutput}")
+        self.logs.configure(state = "disabled")
 
     def newRemoveFolders(self, entryGet = "", modeSelected = 0, startsEndsWith = ""):
         try:
@@ -328,23 +353,23 @@ class WindowUI:
 
         p = multiprocessing.Process(target = self.execution.removeFolders(entryGet, modeSelected, startsEndsWith, incrementValue, incrementStart))
         p.start()
-        self.log.configure(state = "normal")
-        self.log.insert("1.0", f"---------------------------------\n{self.execution.functionsOutput}")
-        self.log.configure(state = "disabled")
+        self.logs.configure(state = "normal")
+        self.logs.insert("1.0", f"---------------------------------\n{self.execution.functionsOutput}")
+        self.logs.configure(state = "disabled")
 
     def newModifyFolders(self, entryGet = "",  modeSelected = 0, replaceWith = "", sleepValue = 0):
         p = multiprocessing.Process(target = self.execution.modifyFolders(entryGet, modeSelected, replaceWith, sleepValue))
         p.start()
-        self.log.configure(state = "normal")
-        self.log.insert("1.0", f"---------------------------------\n{self.execution.functionsOutput}")
-        self.log.configure(state = "disabled")
+        self.logs.configure(state = "normal")
+        self.logs.insert("1.0", f"---------------------------------\n{self.execution.functionsOutput}")
+        self.logs.configure(state = "disabled")
 
     def newFoldersList(self):
         p = multiprocessing.Process(target = self.execution.getFolderList())
         p.start()
-        self.log.configure(state = "normal")
-        self.log.insert("1.0", f"---------------------------------\nCurrently working on:\n{os.getcwd()}.\nFolders list:\n{self.execution.foldersList}")
-        self.log.configure(state = "disabled")
+        self.logs.configure(state = "normal")
+        self.logs.insert("1.0", f"---------------------------------\nCurrently working on:\n{os.getcwd()}.\nFolders list:\n{self.execution.foldersList}")
+        self.logs.configure(state = "disabled")
 
     def newChangeFolder(self):
         p = multiprocessing.Process(target = self.execution.changeFolder())
