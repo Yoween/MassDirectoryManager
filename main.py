@@ -1,7 +1,7 @@
 #imports
 from tkinter import ttk, filedialog
 import tkinter as tk
-import multiprocessing, os, time, subprocess
+import threading, os, time, subprocess
 
 class Execution():
     def changeFolder(self):
@@ -272,8 +272,6 @@ class WindowUI:
         buttonQuit = tk.Button(self.tab4, text = "Quit!", command = self.root.destroy)
         buttonQuit.pack(side = "bottom",  anchor = "se", pady = 8, padx = 8)
 
-
-        self.root.mainloop()
         
         
     def focus_next_widget(self, event):
@@ -329,7 +327,7 @@ class WindowUI:
         if str(incrementStart).isdigit():
             incrementStart = int(incrementStart)
 
-        p = multiprocessing.Process(target = self.execution.createFolders(entryGet, sleepValue, incrementValue, incrementStart))
+        p = threading.Thread(target = self.execution.createFolders(entryGet, sleepValue, incrementValue, incrementStart))
         p.start()
         self.logs.configure(state = "normal")
         self.logs.insert("1.0", f"---------------------------------\n{self.execution.functionsOutput}")
@@ -351,28 +349,28 @@ class WindowUI:
         if str(incrementStart).isdigit():
             incrementStart = int(incrementStart)
 
-        p = multiprocessing.Process(target = self.execution.removeFolders(entryGet, modeSelected, startsEndsWith, incrementValue, incrementStart))
+        p = threading.Thread(target = self.execution.removeFolders(entryGet, modeSelected, startsEndsWith, incrementValue, incrementStart))
         p.start()
         self.logs.configure(state = "normal")
         self.logs.insert("1.0", f"---------------------------------\n{self.execution.functionsOutput}")
         self.logs.configure(state = "disabled")
 
     def newModifyFolders(self, entryGet = "",  modeSelected = 0, replaceWith = "", sleepValue = 0):
-        p = multiprocessing.Process(target = self.execution.modifyFolders(entryGet, modeSelected, replaceWith, sleepValue))
+        p = threading.Thread(target = self.execution.modifyFolders(entryGet, modeSelected, replaceWith, sleepValue))
         p.start()
         self.logs.configure(state = "normal")
         self.logs.insert("1.0", f"---------------------------------\n{self.execution.functionsOutput}")
         self.logs.configure(state = "disabled")
 
     def newFoldersList(self):
-        p = multiprocessing.Process(target = self.execution.getFolderList())
+        p = threading.Thread(target = self.execution.getFolderList())
         p.start()
         self.logs.configure(state = "normal")
         self.logs.insert("1.0", f"---------------------------------\nCurrently working on:\n{os.getcwd()}.\nFolders list:\n{self.execution.foldersList}")
         self.logs.configure(state = "disabled")
 
     def newChangeFolder(self):
-        p = multiprocessing.Process(target = self.execution.changeFolder())
+        p = threading.Thread(target = self.execution.changeFolder())
         p.start()
 
     def newOpenCurrentFolder(self): 
@@ -380,3 +378,4 @@ class WindowUI:
 
 if __name__ == '__main__':
     startUI = WindowUI()
+    startUI.root.mainloop()
